@@ -4,7 +4,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 // import { sendWhatsApp } from '@/lib/whatsapp'
-import { sendWhatsApp } from '@/lib/whatsapp-send'
+// import { sendWhatsApp } from '@/lib/whatsapp-send'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,7 +87,16 @@ ${special_instructions ? `*Notes:* ${special_instructions}` : ''}
 Please confirm with the customer on WhatsApp. 🙏`
 
     // Send WhatsApp via CallMeBot
-    await sendWhatsApp(messageText)
+    // await sendWhatsApp(messageText)
+    await fetch('https://whatsapproal-maharaj-mango-production.up.railway.app/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: messageText,
+      }),
+    })
 
     // Send Email notification
     await sendEmail({
