@@ -88,15 +88,29 @@ Please confirm with the customer on WhatsApp. 🙏`
 
     // Send WhatsApp via CallMeBot
     // await sendWhatsApp(messageText)
-    await fetch('https://whatsapproal-maharaj-mango-production.up.railway.app/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: messageText,
-      }),
-    })
+    // await fetch('https://whatsapproal-maharaj-mango-production.up.railway.app/send', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({
+    //     message: messageText,
+    //   }),
+    // })
+    await fetch(
+      'https://whatsapproal-maharaj-mango-production.up.railway.app/send',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // phone: '16478898529',
+          phone: '917600028233',
+          message: messageText,
+        }),
+      }
+    )
 
     // Send Email notification
     await sendEmail({
