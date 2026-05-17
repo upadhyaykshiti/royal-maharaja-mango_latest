@@ -105,8 +105,8 @@ Please confirm with the customer on WhatsApp. 🙏`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // phone: '16478898529',
-          phone: '917600028233',
+          phone: '16478898529',
+          // phone: '917600028233',
           message: messageText,
         }),
       }
