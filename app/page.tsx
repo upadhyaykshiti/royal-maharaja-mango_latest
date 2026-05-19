@@ -360,13 +360,13 @@ export default function Home() {
                           <input
                             type="number"
                             min="0"
-                            max="20"
+                            max="200"
                             defaultValue={0}
                             className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-[#d4801a]"
                             style={{ borderColor: '#d4801a' }}
                             // className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2"
                             // style={{ borderColor: '#d4801a', focusRingColor: '#d4801a' }}
-                            {...register(product.id === 'kesar' ? 'kesar_qty' : 'alphonso_qty', { min: 0, max: 20 })}
+                            {...register(product.id === 'kesar' ? 'kesar_qty' : 'alphonso_qty', { min: 0, max: 200 })}
                           />
                           <span className="text-xs text-gray-400 font-body">boxes</span>
                         </div>
