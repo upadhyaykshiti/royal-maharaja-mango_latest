@@ -98,7 +98,9 @@ Please confirm with the customer on WhatsApp. 🙏`
     //   }),
     // })
     await fetch(
-      'https://whatsapproal-maharaj-mango-production.up.railway.app/send',
+      // 'https://whatsapproal-maharaj-mango-production.up.railway.app/send',
+      'https://whatsapproal-maharaj-mango-production-d85a.up.railway.app/send',
+
       {
         method: 'POST',
         headers: {
