@@ -11,11 +11,16 @@ create table if not exists orders (
   postal_code text not null,
   kesar_qty integer not null default 0,
   alphonso_qty integer not null default 0,
+  banganapalli_qty integer not null default 0,
+  totapuri_qty integer not null default 0,
+  jumbo_kesar_qty integer not null default 0,
   total_amount numeric not null,
   delivery_date text not null,
   special_instructions text,
   status text not null default 'pending'
-);
+),
+ order_type text not null default 'home_delivery'
+    check (order_type in ('home_delivery', 'courier'));
 
 -- Enable Row Level Security
 alter table orders enable row level security;

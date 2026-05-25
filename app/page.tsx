@@ -35,6 +35,45 @@ const PRODUCTS = [
     highlights: ['Creamy Texture', 'GI Tagged', 'Exotic Fragrance'],
     color: 'from-yellow-500 to-amber-600',
   },
+   {
+    id: 'banganapalli',
+    name: 'Banganapalli Mangoes',
+    subtitle: 'The Pride of Andhra',
+    price: 44,
+    weight: '3.1 kg gross · 2.8 kg net',
+    pieces: '~12 pcs/box',
+    origin: 'Andhra Pradesh',
+    description: 'Large, golden-yellow mangoes with thin skin and firm, sweet flesh. A GI-tagged treasure from the sun-kissed fields of Andhra Pradesh.',
+    emoji: '🥭',
+    highlights: ['GI Tagged', 'Firm Sweet Flesh', '~12 pcs/box'],
+    color: 'from-yellow-400 to-lime-500',
+  },
+  {
+    id: 'totapuri',
+    name: 'Totapuri Mangoes',
+    subtitle: 'The Parrot-Beak Mango',
+    price: 46,
+    weight: '3.1 kg gross · 2.8 kg net',
+    pieces: '~10 pcs/box',
+    origin: 'Karnataka & Tamil Nadu',
+    description: 'Named for its distinctive parrot-beak shape. Mild, tangy-sweet flavour with firm flesh — perfect for eating fresh or making aamras.',
+    emoji: '🥭',
+    highlights: ['Tangy-Sweet', 'Firm Texture', '~10 pcs/box'],
+    color: 'from-green-400 to-emerald-500',
+  },
+  {
+    id: 'jumbo_kesar',
+    name: 'Jumbo Kesar Mangoes',
+    subtitle: 'Extra Large · Premium Grade',
+    price: 45,
+    weight: '3.1 kg gross · 2.8 kg net',
+    pieces: '~9–10 pcs/box',
+    origin: 'Gir, Gujarat',
+    description: 'All the rich saffron sweetness of Kesar — in an extra-large size. Handpicked select-grade fruits for those who want the absolute best.',
+    emoji: '🥭',
+    highlights: ['Extra Large Size', 'Select Grade', '~9–10 pcs/box'],
+    color: 'from-orange-400 to-red-500',
+  },
 ]
 
 const CITIES = [
@@ -53,40 +92,118 @@ export default function Home() {
 
   const kesarQty = watch('kesar_qty') || 0
   const alphonsoQty = watch('alphonso_qty') || 0
-  const total = (Number(kesarQty) * 44) + (Number(alphonsoQty) * 46)
+  const banganpalliQty = watch('banganapalli_qty') || 0
+  const totapuriQty = watch('totapuri_qty') || 0
+  const jumboKesarQty = watch('jumbo_kesar_qty') || 0
+  const selectedCity = watch('city') || ''
+  const courierMode = selectedCity === 'other'
+  const total = courierMode
+    ? (Number(kesarQty) * 55)
+    : (Number(kesarQty) * 44) +
+      (Number(alphonsoQty) * 46) +
+      (Number(banganpalliQty) * 44) +
+      (Number(totapuriQty) * 46) +
+      (Number(jumboKesarQty) * 45)
+
+
+  // const total = (Number(kesarQty) * 44) + (Number(alphonsoQty) * 46) +
+  //   (Number(banganpalliQty) * 44) +
+  //   (Number(totapuriQty) * 46) +
+  //   (Number(jumboKesarQty) * 45)
 
   useEffect(() => {
     setDeliveryDates(getNextDeliveryDates())
   }, [])
 
-  const onSubmit = async (data: Order) => {
-    if (Number(data.kesar_qty) === 0 && Number(data.alphonso_qty) === 0) {
-      toast.error('Please add at least one box to your order.')
-      return
+  // const onSubmit = async (data: Order) => {
+  //   if (Number(data.kesar_qty) === 0 && Number(data.alphonso_qty) === 0 &&
+  //     Number(data.banganapalli_qty) === 0 &&
+  //     Number(data.totapuri_qty) === 0 &&
+  //     Number(data.jumbo_kesar_qty) === 0 )
+  //     {
+  //     toast.error('Please add at least one box to your order.')
+  //     return
+  //   }
+  //   setIsSubmitting(true)
+  //   try {
+  //     const res = await fetch('/api/order', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         ...data,
+  //         kesar_qty: Number(data.kesar_qty) || 0,
+  //         alphonso_qty: Number(data.alphonso_qty) || 0,
+  //         banganapalli_qty: Number(data.banganapalli_qty) || 0,
+  //         totapuri_qty: Number(data.totapuri_qty) || 0,
+  //         jumbo_kesar_qty: Number(data.jumbo_kesar_qty) || 0,
+  //         total_amount: total,
+  //       }),
+  //     })
+  //     const result = await res.json()
+  //     if (!res.ok) throw new Error(result.error || 'Something went wrong')
+  //     setOrderSuccess(true)
+  //     reset()
+  //     toast.success('Order placed! Bhavin Shah will contact you shortly. 🥭')
+  //   } catch (err: any) {
+  //     toast.error(err.message || 'Failed to place order. Please try again.')
+  //   } finally {
+  //     setIsSubmitting(false)
+  //   }
+  // }
+   const onSubmit = async (data: Order) => {
+      const isCourierOrder = data.city === 'other'
+  
+      if (isCourierOrder) {
+        if (Number(data.kesar_qty) === 0) {
+          toast.error('Courier orders are Kesar only. Please add at least 1 box.')
+          return
+        }
+        
+        // if (Number(data.kesar_qty) > 50) {
+        //   toast.error('Courier orders are limited to a maximum of 50 Kesar boxes.')
+        //   return
+        // }
+
+      } else if (
+        Number(data.kesar_qty) === 0 &&
+        Number(data.alphonso_qty) === 0 &&
+        Number(data.banganapalli_qty) === 0 &&
+        Number(data.totapuri_qty) === 0 &&
+        Number(data.jumbo_kesar_qty) === 0
+      ) {
+        toast.error('Please add at least one box to your order.')
+        return
+      }
+  
+      setIsSubmitting(true)
+      try {
+        const res = await fetch('/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...data,
+            kesar_qty: Number(data.kesar_qty) || 0,
+            alphonso_qty: isCourierOrder ? 0 : (Number(data.alphonso_qty) || 0),
+            banganapalli_qty: isCourierOrder ? 0 : (Number(data.banganapalli_qty) || 0),
+            totapuri_qty: isCourierOrder ? 0 : (Number(data.totapuri_qty) || 0),
+            jumbo_kesar_qty: isCourierOrder ? 0 : (Number(data.jumbo_kesar_qty) || 0),
+            total_amount: total,
+            order_type: isCourierOrder ? 'courier' : 'home_delivery',
+            city: isCourierOrder ? (data.other_city || 'Other City') : data.city,
+          }),
+        })
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.error || 'Something went wrong')
+        setOrderSuccess(true)
+        reset()
+        toast.success('Order placed! Bhavin will contact you shortly. 🥭')
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to place order. Please try again.')
+      } finally {
+        setIsSubmitting(false)
+      }
     }
-    setIsSubmitting(true)
-    try {
-      const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          kesar_qty: Number(data.kesar_qty) || 0,
-          alphonso_qty: Number(data.alphonso_qty) || 0,
-          total_amount: total,
-        }),
-      })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Something went wrong')
-      setOrderSuccess(true)
-      reset()
-      toast.success('Order placed! Bhavin Shah will contact you shortly. 🥭')
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to place order. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: '#fdf8ee' }}>
@@ -155,7 +272,7 @@ export default function Home() {
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-10 fade-in-up" style={{ animationDelay: '0.5s' }}>
-            {['🚚 Fri & Sat Delivery', '🏠 Home Delivery Only', '✅ Farm-Direct Fresh'].map(tag => (
+            {['🚚 Sat & Sun Delivery', '🏠 Home Delivery Only', '✅ Farm-Direct Fresh'].map(tag => (
               <span key={tag} className="px-4 py-2 text-sm rounded-full font-body" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 {tag}
               </span>
@@ -278,9 +395,11 @@ export default function Home() {
 
           <div className="grid gap-6 mb-10 sm:grid-cols-3">
             {[
-              { icon: '📅', title: 'Delivery Days', desc: 'Every Friday & Saturday only' },
+              { icon: '📅', title: 'Delivery Days', desc: 'Every Saturday & Sunday only' },
               { icon: '🏠', title: 'Home Delivery', desc: 'No pickup — we come to you' },
-              { icon: '📍', title: 'Coverage Area', desc: 'Across Greater Toronto Area' },
+              { icon: '📍', title: 'Home Delivery Coverage Area', desc: 'Across Greater Toronto Area' },
+              { icon: '📦', title: 'Courier Service', desc: 'Across Canada' },
+
             ].map(item => (
               <div key={item.title} className="p-6 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(212,128,26,0.3)' }}>
                 <div className="mb-3 text-4xl">{item.icon}</div>
@@ -346,7 +465,7 @@ export default function Home() {
                 <div>
                   <h4 className="mb-4 text-lg font-semibold font-display" style={{ color: '#1b4332' }}>Select Your Mangoes</h4>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {PRODUCTS.map(product => (
+                    {/* {PRODUCTS.map(product => (
                       <div key={product.id} className="p-4 border rounded-xl" style={{ borderColor: 'rgba(212,128,26,0.25)', backgroundColor: '#fffbeb' }}>
                         <div className="flex items-center justify-between mb-2">
                           <div>
@@ -366,21 +485,93 @@ export default function Home() {
                             style={{ borderColor: '#d4801a' }}
                             // className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2"
                             // style={{ borderColor: '#d4801a', focusRingColor: '#d4801a' }}
-                            {...register(product.id === 'kesar' ? 'kesar_qty' : 'alphonso_qty', { min: 0, max: 200 })}
+                            // {...register(product.id === 'kesar' ? 'kesar_qty' : 'alphonso_qty', { min: 0, max: 200 })}
+                            {...register(`${product.id}_qty` as any, { min: 0, max: 200 })}
+
                           />
                           <span className="text-xs text-gray-400 font-body">boxes</span>
                         </div>
                       </div>
-                    ))}
+                    ))} */}
+                    {PRODUCTS.map(product => {
+                      const lockedOut = courierMode && product.id !== 'kesar'
+                      const courierPrice = courierMode && product.id === 'kesar'
+                      return (
+                        <div key={product.id} className="p-4 rounded-xl border transition-opacity" style={{ borderColor: 'rgba(212,128,26,0.25)', backgroundColor: lockedOut ? '#f5f5f5' : '#fffbeb', opacity: lockedOut ? 0.4 : 1 }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <div className="font-display font-semibold text-sm" style={{ color: '#1b4332' }}>{product.name}</div>
+                              <div className="font-body text-xs text-gray-400">
+                                ${courierPrice ? 55 : product.price} CAD / box{product.pieces ? ` · ${product.pieces}` : ''}
+                                {courierPrice && <span className="ml-1 text-amber-600 font-bold">(courier)</span>}
+                              </div>
+                            </div>
+                            <span className="text-2xl">{product.emoji}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-3">
+                            <label className="font-body text-xs text-gray-500">Qty:</label>
+                            {/* <input
+                              type="number"
+                              min="0"
+                              max="200"
+                              defaultValue={0}
+                              disabled={lockedOut}
+                              className="w-20 px-3 py-2 rounded-lg border text-center font-body font-bold text-sm focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                              style={{ borderColor: lockedOut ? '#d1d5db' : '#d4801a' }}
+                              {...register(`${product.id}_qty` as any, { min: 0, max: 200 })}
+                            /> */}
+                            <input
+                              type="number"
+                              min="0"
+                              max={courierMode ? 50 : 200}
+                              defaultValue={0}
+                              disabled={lockedOut}
+                              className="w-20 px-3 py-2 rounded-lg border text-center font-body font-bold text-sm focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                              style={{ borderColor: lockedOut ? '#d1d5db' : '#d4801a' }}
+                              {...register(`${product.id}_qty` as any, {
+                                min: 0,
+                                max: courierMode ? 50 : 200,
+                              })}
+                            />
+                            <span className="font-body text-xs text-gray-400">boxes</span>
+                            {/* <div className="mt-2 text-[11px] font-body text-gray-400">
+                              {courierMode
+                                ? 'Maximum 50 boxes for courier orders'
+                                : 'Maximum 200 boxes for home delivery'}
+                            </div> */}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                   {/* Order summary */}
-                  {total > 0 && (
+                  {/* {total > 0 && (
                     <div className="flex items-center justify-between p-4 mt-4 rounded-xl" style={{ backgroundColor: '#1b4332' }}>
                       <div className="text-sm font-body text-white/70">
                         {kesarQty > 0 && <span>{kesarQty} × Kesar ${44 * Number(kesarQty)} </span>}
                         {alphonsoQty > 0 && <span>{alphonsoQty} × Alphonso ${46 * Number(alphonsoQty)}</span>}
                       </div>
                       <div className="text-xl font-bold text-white font-display">
+                        Total: ${total} <span className="text-sm font-normal text-white/60">CAD</span>
+                      </div>
+                    </div>
+                  )} */}
+                    {total > 0 && (
+                    <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: '#1b4332' }}>
+                      <div className="font-body text-white/70 text-sm mb-2 space-y-0.5">
+                        {courierMode ? (
+                          Number(kesarQty) > 0 && <div>{kesarQty} × Kesar (Courier) = ${55 * Number(kesarQty)} CAD</div>
+                        ) : (
+                          <>
+                            {Number(kesarQty) > 0 && <div>{kesarQty} × Kesar = ${44 * Number(kesarQty)} CAD</div>}
+                            {Number(alphonsoQty) > 0 && <div>{alphonsoQty} × Alphonso = ${46 * Number(alphonsoQty)} CAD</div>}
+                            {Number(banganpalliQty) > 0 && <div>{banganpalliQty} × Banganapalli = ${44 * Number(banganpalliQty)} CAD</div>}
+                            {Number(totapuriQty) > 0 && <div>{totapuriQty} × Totapuri = ${46 * Number(totapuriQty)} CAD</div>}
+                            {Number(jumboKesarQty) > 0 && <div>{jumboKesarQty} × Jumbo Kesar = ${45 * Number(jumboKesarQty)} CAD</div>}
+                          </>
+                        )}
+                      </div>
+                      <div className="font-display font-bold text-white text-xl border-t border-white/20 pt-2 mt-2">
                         Total: ${total} <span className="text-sm font-normal text-white/60">CAD</span>
                       </div>
                     </div>
@@ -477,6 +668,8 @@ export default function Home() {
                         >
                           <option value="">Select city…</option>
                           {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          <option value="other">📦 Other City (Courier)</option>
+                          {/* {CITIES.map(c => <option key={c} value={c}>{c}</option>)} */}
                         </select>
                         {errors.city && <p className="mt-1 text-xs text-red-500">{errors.city.message}</p>}
                       </div>
@@ -492,6 +685,37 @@ export default function Home() {
                         {errors.postal_code && <p className="mt-1 text-xs text-red-500">{errors.postal_code.message}</p>}
                       </div>
                     </div>
+
+                     {/* Other City text box — shown only when courier selected */}
+                    {courierMode && (
+                      <div>
+                        <label className="block font-body font-bold text-sm mb-1.5" style={{ color: '#1b4332' }}>Your City *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Hamilton, Ottawa, Calgary…"
+                          className="w-full px-4 py-3 rounded-lg border font-body text-sm focus:outline-none focus:ring-2"
+                          style={{ borderColor: 'rgba(212,128,26,0.4)' }}
+                          {...register('other_city', { required: courierMode ? 'Please enter your city' : false })}
+                        />
+                        {(errors as any).other_city && <p className="text-red-500 text-xs mt-1">{(errors as any).other_city.message}</p>}
+                      </div>
+                    )}
+
+                    {/* Courier notice banner */}
+                    {courierMode && (
+                      <div className="p-4 rounded-xl border-2" style={{ backgroundColor: '#fffbeb', borderColor: '#d4801a' }}>
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">📦</span>
+                          <div>
+                            <div className="font-display font-bold text-sm mb-1" style={{ color: '#1b4332' }}>Courier Order</div>
+                            <div className="font-body text-xs leading-relaxed" style={{ color: '#78350f' }}>
+                              Courier orders are <strong>Kesar only</strong> at <strong>$55 CAD / box</strong> (includes shipping).
+                              Bhavin will confirm delivery timeline via WhatsApp after you place the order.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block font-body font-bold text-sm mb-1.5" style={{ color: '#1b4332' }}>Special Instructions <span className="font-normal text-gray-400">(optional)</span></label>
@@ -509,7 +733,11 @@ export default function Home() {
                 {/* Submit */}
                 <div className="pt-2">
                   <div className="p-4 mb-4 text-sm rounded-xl font-body" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
-                    💳 <strong>Payment</strong> — Bhavin Shah will WhatsApp you to confirm your order and delivery window.
+                    {/* 💳 <strong>Payment</strong> — Bhavin Shah will WhatsApp you to confirm your order and delivery window. */}
+                  {courierMode
+                      ? <>📦 <strong>Courier order</strong> — Bhavin will WhatsApp you to confirm shipping details and payment.</>
+                      : <>💳 <strong>Payment on delivery</strong> — Bhavin will WhatsApp you to confirm your order and delivery window.</>
+                    }
                   </div>
                   <button
                     type="submit"

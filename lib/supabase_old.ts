@@ -23,6 +23,4 @@ export type Order = {
   delivery_date: string
   special_instructions?: string
   status?: string
-  order_type?: string
-  other_city?: string
 }
