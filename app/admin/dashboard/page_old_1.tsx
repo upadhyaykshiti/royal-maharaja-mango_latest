@@ -2,9 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import logo from '../../../public/logo.png'
-
 
 type Order = {
   id: string
@@ -23,6 +20,7 @@ type Order = {
   total_amount: number
   delivery_date: string
   special_instructions?: string
+  order_type?: string
   status: string
 }
 
@@ -56,7 +54,6 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 10
 
-
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/admin/orders')
@@ -67,10 +64,7 @@ export default function AdminDashboard() {
   }, [router])
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
-
-    useEffect(() => {
-    setCurrentPage(1)
-  }, [filter, search, dateFilter])
+  useEffect(() => { setCurrentPage(1) }, [filter, search, dateFilter])
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(id)
@@ -98,33 +92,49 @@ export default function AdminDashboard() {
     return matchStatus && matchSearch && matchDate
   })
 
-  const notCancelled = orders.filter(o => o.status !== 'cancelled')
-
   const totalPages = Math.ceil(filtered.length / ordersPerPage)
-
   const paginatedOrders = filtered.slice(
     (currentPage - 1) * ordersPerPage,
     currentPage * ordersPerPage
   )
 
-  const stats = [
-    { label: 'Total Orders',      val: orders.length },
-    { label: 'Pending',           val: orders.filter(o => o.status === 'pending').length },
-    { label: 'Confirmed',         val: orders.filter(o => o.status === 'confirmed').length },
-    { label: 'Completed',         val: orders.filter(o => o.status === 'completed').length },
-    { label: 'Total Revenue',     val: `$${notCancelled.reduce((s, o) => s + Number(o.total_amount), 0)} CAD` },
-    { label: 'Kesar Boxes',       val: notCancelled.reduce((s, o) => s + (o.kesar_qty || 0), 0) },
-    { label: 'Alphonso Boxes',    val: notCancelled.reduce((s, o) => s + (o.alphonso_qty || 0), 0) },
-    { label: 'Banganapalli',      val: notCancelled.reduce((s, o) => s + (o.banganapalli_qty || 0), 0) },
-    { label: 'Totapuri Boxes',    val: notCancelled.reduce((s, o) => s + (o.totapuri_qty || 0), 0) },
-    { label: 'Jumbo Kesar',       val: notCancelled.reduce((s, o) => s + (o.jumbo_kesar_qty || 0), 0) },
+  // ── STATS ──────────────────────────────────────────────────
+  const notCancelled   = orders.filter(o => o.status !== 'cancelled')
+  const homeOrders     = notCancelled.filter(o => o.order_type !== 'courier')
+  const courierOrders  = notCancelled.filter(o => o.order_type === 'courier')
+
+  // Total revenue = sum of total_amount for all non-cancelled orders
+  // (courier orders already priced at $55/box so total_amount is correct)
+  const totalRevenue   = notCancelled.reduce((s, o) => s + Number(o.total_amount), 0)
+  const homeRevenue    = homeOrders.reduce((s, o) => s + Number(o.total_amount), 0)
+  const courierRevenue = courierOrders.reduce((s, o) => s + Number(o.total_amount), 0)
+
+  const statGroups = [
+    // Row 1 — Order counts
+    { label: 'Total Orders',      val: orders.length,                                        highlight: false },
+    { label: '🏠 Home Delivery',  val: orders.filter(o => o.order_type !== 'courier').length, highlight: false },
+    { label: '📦 Courier Orders', val: orders.filter(o => o.order_type === 'courier').length, highlight: false },
+    { label: 'Pending',           val: orders.filter(o => o.status === 'pending').length,     highlight: false },
+    { label: 'Confirmed',         val: orders.filter(o => o.status === 'confirmed').length,   highlight: false },
+    { label: 'Completed',         val: orders.filter(o => o.status === 'completed').length,   highlight: false },
+    // Row 2 — Revenue
+    { label: 'Total Revenue',     val: `$${totalRevenue} CAD`,   highlight: true  },
+    { label: 'Home Revenue',      val: `$${homeRevenue} CAD`,    highlight: false },
+    { label: 'Courier Revenue',   val: `$${courierRevenue} CAD`, highlight: false },
+    // Row 3 — Box counts
+    { label: 'Kesar Boxes',       val: notCancelled.reduce((s, o) => s + (o.kesar_qty || 0), 0),        highlight: false },
+    { label: 'Alphonso Boxes',    val: notCancelled.reduce((s, o) => s + (o.alphonso_qty || 0), 0),     highlight: false },
+    { label: 'Banganapalli',      val: notCancelled.reduce((s, o) => s + (o.banganapalli_qty || 0), 0), highlight: false },
+    { label: 'Totapuri Boxes',    val: notCancelled.reduce((s, o) => s + (o.totapuri_qty || 0), 0),     highlight: false },
+    { label: 'Jumbo Kesar',       val: notCancelled.reduce((s, o) => s + (o.jumbo_kesar_qty || 0), 0),  highlight: false },
   ]
 
+  // ── STYLES ─────────────────────────────────────────────────
   const s: Record<string, React.CSSProperties> = {
     page:       { minHeight: '100vh', background: '#f1f5f4', fontFamily: 'Lato, sans-serif' },
     topbar:     { background: '#1b4332', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 },
     content:    { maxWidth: 1200, margin: '0 auto', padding: '24px 16px' },
-    statsGrid:  { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 24 },
+    statsGrid:  { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 8 },
     statCard:   { background: 'white', borderRadius: 10, padding: '12px 14px', border: '0.5px solid #e5e7eb' },
     statLabel:  { fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 } as React.CSSProperties,
     statVal:    { fontSize: 20, fontWeight: 700, fontFamily: 'Georgia, serif', color: '#1b4332' },
@@ -163,19 +173,19 @@ export default function AdminDashboard() {
     opacity: active ? 1 : 0.6,
   })
 
+  // Stat section labels
+  const sectionLabel = (text: string) => (
+    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#9ca3af', marginBottom: 6, marginTop: 16 }}>
+      {text}
+    </div>
+  )
+
   return (
     <div style={s.page}>
       {/* Topbar */}
       <div style={s.topbar}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* <span style={{ fontSize: 20 }}>👑</span> */}
-           <Image
-              src={logo}
-              alt="Royal Maharaja Mango Logo"
-              width={50}
-              height={50}
-              className="object-contain"
-            /> 
+          <span style={{ fontSize: 20 }}>👑</span>
           <div>
             <div style={{ color: 'white', fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 14 }}>Royal Maharaja Mango</div>
             <div style={{ color: '#f59e0b', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase' }}>Admin Dashboard</div>
@@ -192,9 +202,41 @@ export default function AdminDashboard() {
       </div>
 
       <div style={s.content}>
-        {/* Stats */}
+
+        {/* ── STATS ── */}
+
+        {/* Orders */}
+        {sectionLabel('Orders')}
         <div style={s.statsGrid}>
-          {stats.map(st => (
+          {statGroups.slice(0, 6).map(st => (
+            <div key={st.label} style={{
+              ...s.statCard,
+              ...(st.highlight ? { border: '1.5px solid #d4801a', background: '#fffbeb' } : {}),
+            }}>
+              <div style={s.statLabel}>{st.label}</div>
+              <div style={{ ...s.statVal, ...(st.highlight ? { color: '#b45309' } : {}) }}>{st.val}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Revenue */}
+        {sectionLabel('Revenue (excl. cancelled)')}
+        <div style={{ ...s.statsGrid, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', marginBottom: 8 }}>
+          {statGroups.slice(6, 9).map(st => (
+            <div key={st.label} style={{
+              ...s.statCard,
+              ...(st.highlight ? { border: '1.5px solid #d4801a', background: '#fffbeb' } : {}),
+            }}>
+              <div style={s.statLabel}>{st.label}</div>
+              <div style={{ ...s.statVal, fontSize: 18, ...(st.highlight ? { color: '#b45309' } : {}) }}>{st.val}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Box counts */}
+        {sectionLabel('Boxes Sold (excl. cancelled)')}
+        <div style={{ ...s.statsGrid, marginBottom: 24 }}>
+          {statGroups.slice(9).map(st => (
             <div key={st.label} style={s.statCard}>
               <div style={s.statLabel}>{st.label}</div>
               <div style={s.statVal}>{st.val}</div>
@@ -236,8 +278,8 @@ export default function AdminDashboard() {
           paginatedOrders.map(order => {
             const expanded = expandedId === order.id
             const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+            const isCourier = order.order_type === 'courier'
 
-            // Build compact items summary for card header
             const itemSummary = PRODUCT_META
               .filter(p => (order[p.key as keyof Order] as number) > 0)
               .map(p => `${order[p.key as keyof Order]} × ${p.label}`)
@@ -247,6 +289,11 @@ export default function AdminDashboard() {
               <div key={order.id} style={s.card}>
                 {/* Card Header */}
                 <div style={s.cardHeader} onClick={() => setExpandedId(expanded ? null : order.id)}>
+                  {isCourier && (
+                    <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: 9, fontWeight: 700, background: '#fef3c7', color: '#92400e', whiteSpace: 'nowrap' }}>
+                      📦 Courier
+                    </span>
+                  )}
                   <span style={badge(order.status)}>{cfg.label}</span>
 
                   <div style={{ flex: 1, minWidth: 140 }}>
@@ -303,13 +350,15 @@ export default function AdminDashboard() {
                         <div style={s.detailVal}>{order.delivery_address}, {order.city}, {order.postal_code}</div>
                       </div>
 
-                      {/* All 5 product lines — only show if qty > 0 */}
+                      {/* Product lines — only show if qty > 0 */}
                       {PRODUCT_META.filter(p => (order[p.key as keyof Order] as number) > 0).map(p => {
                         const qty = order[p.key as keyof Order] as number
+                        // Courier Kesar is priced at $55
+                        const unitPrice = (isCourier && p.key === 'kesar_qty') ? 55 : p.price
                         return (
                           <div key={p.key}>
-                            <div style={s.detailLabel}>{p.label} Boxes</div>
-                            <div style={s.detailVal}>{qty} × ${p.price} = ${qty * p.price} CAD</div>
+                            <div style={s.detailLabel}>{p.label} Boxes{isCourier && p.key === 'kesar_qty' ? ' (Courier $55)' : ''}</div>
+                            <div style={s.detailVal}>{qty} × ${unitPrice} = ${qty * unitPrice} CAD</div>
                           </div>
                         )
                       })}
@@ -321,6 +370,13 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
+                      <div>
+                        <div style={s.detailLabel}>Order Type</div>
+                        <div style={{ ...s.detailVal, fontWeight: 700, color: isCourier ? '#92400e' : '#166534' }}>
+                          {isCourier ? '📦 Courier' : '🏠 Home Delivery'}
+                        </div>
+                      </div>
+
                       {order.special_instructions && (
                         <div style={{ gridColumn: '1 / -1' }}>
                           <div style={s.detailLabel}>Special Instructions</div>
@@ -329,6 +385,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       )}
+
                       <div>
                         <div style={s.detailLabel}>Order ID</div>
                         <div style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace' }}>{order.id}</div>
@@ -362,72 +419,40 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 )}
-
-               
               </div>
             )
           })
         )}
-         {/* Pagination */}
-          {totalPages > 1 && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 8,
-                        marginTop: 24,
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <button
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(p => p - 1)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 6,
-                          border: '1px solid #d1d5db',
-                          background: currentPage === 1 ? '#f3f4f6' : 'white',
-                          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        ← Prev
-                      </button>
 
-                      {Array.from({ length: totalPages }, (_, i) => (
-                        <button
-                          key={i + 1}
-                          onClick={() => setCurrentPage(i + 1)}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: 6,
-                            border: '1px solid #d1d5db',
-                            background: currentPage === i + 1 ? '#1b4332' : 'white',
-                            color: currentPage === i + 1 ? 'white' : '#111827',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            minWidth: 36,
-                          }}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 24, flexWrap: 'wrap' }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+              style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #d1d5db', background: currentPage === 1 ? '#f3f4f6' : 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+            >
+              ← Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: currentPage === i + 1 ? '#1b4332' : 'white', color: currentPage === i + 1 ? 'white' : '#111827', fontWeight: 700, cursor: 'pointer', minWidth: 36 }}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+              style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #d1d5db', background: currentPage === totalPages ? '#f3f4f6' : 'white', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            >
+              Next →
+            </button>
+          </div>
+        )}
 
-                      <button
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(p => p + 1)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 6,
-                          border: '1px solid #d1d5db',
-                          background: currentPage === totalPages ? '#f3f4f6' : 'white',
-                          cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        Next →
-                      </button>
-                    </div>
-          )}
       </div>
     </div>
   )

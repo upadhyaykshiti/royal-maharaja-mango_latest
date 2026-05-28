@@ -34,9 +34,50 @@ export async function POST(req: NextRequest) {
       order_type,
     } = body
 
+    const isCourier = order_type === 'courier'
+
+
+
+    // Fetch all availability settings
+    const { data: settingsRows } = await supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['orders_open','kesar_home_open','kesar_courier_open','alphonso_open','banganapalli_open','totapuri_open','jumbo_kesar_open'])
+    
+      const settingsMap: Record<string, boolean> = {
+          orders_open: true, kesar_home_open: true, kesar_courier_open: true, alphonso_open: true,
+          banganapalli_open: true, totapuri_open: true, jumbo_kesar_open: true,
+      }
+      if (settingsRows) {
+          settingsRows.forEach((r: { key: string; value: string }) => {
+          settingsMap[r.key] = r.value !== 'false'
+        })
+      }
+    
+      if (!settingsMap.orders_open) {
+        return NextResponse.json({ error: 'Orders are currently closed. Please check back soon.' }, { status: 503 })
+      }
+    
+      // Validate that ordered varieties are available
+      const kesarSettingKey = isCourier ? 'kesar_courier_open' : 'kesar_home_open'
+
+      const varietyChecks: { qty: number; key: string; name: string }[] = [
+        // { qty: kesar_qty || 0,          key: 'kesar_open',        name: 'Kesar' },
+        { qty: kesar_qty || 0,          key: kesarSettingKey,     name: `Kesar (${isCourier ? 'Courier' : 'Home'})` },
+        { qty: alphonso_qty || 0,       key: 'alphonso_open',     name: 'Alphonso' },
+        { qty: banganapalli_qty || 0,   key: 'banganapalli_open', name: 'Banganapalli' },
+        { qty: totapuri_qty || 0,       key: 'totapuri_open',     name: 'Totapuri' },
+        { qty: jumbo_kesar_qty || 0,    key: 'jumbo_kesar_open',  name: 'Jumbo Kesar' },
+      ]
+      for (const v of varietyChecks) {
+          if (v.qty > 0 && !settingsMap[v.key]) {
+            return NextResponse.json({ error: `${v.name} is currently sold out. Please remove it from your order.` }, { status: 400 })
+          }
+      }
+
     
 
-    const isCourier = order_type === 'courier'
+    // const isCourier = order_type === 'courier'
     const resolvedCity = isCourier ? (other_city || 'Other City') : city
 
     // Validate required fields

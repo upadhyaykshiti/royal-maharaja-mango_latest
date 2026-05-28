@@ -32,3 +32,37 @@ create policy "Allow public inserts" on orders
 -- Only service role can read orders (admin use only)
 create policy "Service role can read" on orders
   for select using (auth.role() = 'service_role');
+
+
+
+-- ============================================================
+-- Settings table for admin controls (e.g. orders on/off)
+-- ============================================================
+create table if not exists settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz default now()
+);
+
+alter table settings enable row level security;
+
+-- Allow anon to READ settings (so the order form can check)
+create policy "Allow public read settings" on settings
+  for select to anon using (true);
+
+-- Only service role can update settings
+create policy "Service role update settings" on settings
+  for update using (auth.role() = 'service_role');
+
+
+-- Insert defaults: orders open + all varieties available
+insert into settings (key, value) values ('orders_open', 'true') on conflict (key) do nothing;
+-- insert into settings (key, value) values ('kesar_open', 'true') on conflict (key) do nothing;
+insert into settings (key, value) values ('kesar_home_open', 'true') on conflict (key) do nothing;
+insert into settings (key, value) values ('kesar_courier_open', 'true') on conflict (key) do nothing;
+insert into settings (key, value) values ('alphonso_open', 'true') on conflict (key) do nothing;
+insert into settings (key, value) values ('banganapalli_open', 'true') on conflict (key) do nothing;
+insert into settings (key, value) values ('totapuri_open', 'true') on conflict (key) do nothing;
+insert into settings (key, value) values ('jumbo_kesar_open', 'true') on conflict (key) do nothing;
+
+

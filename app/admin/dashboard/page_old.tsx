@@ -26,8 +26,7 @@ type Order = {
 
 type Settings = {
   orders_open: boolean
-  kesar_home_open: boolean
-  kesar_courier_open: boolean
+  kesar_open: boolean
   alphonso_open: boolean
   banganapalli_open: boolean
   totapuri_open: boolean
@@ -36,8 +35,7 @@ type Settings = {
 
 const DEFAULT_SETTINGS: Settings = {
   orders_open: true,
-  kesar_home_open: true,
-  kesar_courier_open: true,
+  kesar_open: true,
   alphonso_open: true,
   banganapalli_open: true,
   totapuri_open: true,
@@ -63,12 +61,11 @@ const PRODUCT_META = [
 ]
 
 const VARIETY_TOGGLES = [
-  { key: 'kesar_home_open',    label: 'Kesar (Home Delivery)', emoji: '🟡' },
-  { key: 'kesar_courier_open', label: 'Kesar (Courier)',        emoji: '📦' },
-  { key: 'alphonso_open',      label: 'Alphonso',               emoji: '🟠' },
-  { key: 'banganapalli_open',  label: 'Banganapalli',           emoji: '🟢' },
-  { key: 'totapuri_open',      label: 'Totapuri',               emoji: '🍃' },
-  { key: 'jumbo_kesar_open',   label: 'Jumbo Kesar',            emoji: '👑' },
+  { key: 'kesar_open',        label: 'Kesar',        emoji: '🟡' },
+  { key: 'alphonso_open',     label: 'Alphonso',     emoji: '🟠' },
+  { key: 'banganapalli_open', label: 'Banganapalli', emoji: '🟢' },
+  { key: 'totapuri_open',     label: 'Totapuri',     emoji: '🍃' },
+  { key: 'jumbo_kesar_open',  label: 'Jumbo Kesar',  emoji: '👑' },
 ]
 
 export default function AdminDashboard() {
@@ -534,6 +531,7 @@ export default function AdminDashboard() {
             )
           })
         )}
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 24, flexWrap: 'wrap' }}>
@@ -562,7 +560,6 @@ export default function AdminDashboard() {
             </button>
           </div>
         )}
-       
       </div>
     </div>
   )

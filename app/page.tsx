@@ -88,6 +88,18 @@ export default function Home() {
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [deliveryDates, setDeliveryDates] = useState<string[]>([])
 
+  const [siteSettings, setSiteSettings] = useState<Record<string, boolean>>({
+    orders_open: true,
+    // kesar_open: true,
+    kesar_home_open: true,
+    kesar_courier_open: true,
+    alphonso_open: true,
+    banganapalli_open: true,
+    totapuri_open: true,
+    jumbo_kesar_open: true,
+  })
+  const [settingsLoading, setSettingsLoading] = useState(true)
+  
   const { register, handleSubmit, watch, formState: { errors }, reset, setValue } = useForm<Order>()
 
   const kesarQty = watch('kesar_qty') || 0
@@ -113,6 +125,15 @@ export default function Home() {
 
   useEffect(() => {
     setDeliveryDates(getNextDeliveryDates())
+      // Fetch all availability settings
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then(d => {
+        setSiteSettings(prev => ({ ...prev, ...d }))
+        setSettingsLoading(false)
+      })
+      .catch(() => setSettingsLoading(false))
+
   }, [])
 
   // const onSubmit = async (data: Order) => {
@@ -151,7 +172,11 @@ export default function Home() {
   //   }
   // }
    const onSubmit = async (data: Order) => {
-      const isCourierOrder = data.city === 'other'
+    if (!siteSettings.orders_open) {
+        toast.error('Orders are currently closed. Please check back soon.')
+        return
+    }
+    const isCourierOrder = data.city === 'other'
   
       if (isCourierOrder) {
         if (Number(data.kesar_qty) === 0) {
@@ -465,58 +490,35 @@ export default function Home() {
                 <div>
                   <h4 className="mb-4 text-lg font-semibold font-display" style={{ color: '#1b4332' }}>Select Your Mangoes</h4>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {/* {PRODUCTS.map(product => (
-                      <div key={product.id} className="p-4 border rounded-xl" style={{ borderColor: 'rgba(212,128,26,0.25)', backgroundColor: '#fffbeb' }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <div className="text-sm font-semibold font-display" style={{ color: '#1b4332' }}>{product.name}</div>
-                            <div className="text-xs text-gray-400 font-body">${product.price} CAD / box</div>
-                          </div>
-                          <span className="text-2xl">{product.emoji}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-3">
-                          <label className="text-xs text-gray-500 font-body">Qty:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="200"
-                            defaultValue={0}
-                            className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-[#d4801a]"
-                            style={{ borderColor: '#d4801a' }}
-                            // className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2"
-                            // style={{ borderColor: '#d4801a', focusRingColor: '#d4801a' }}
-                            // {...register(product.id === 'kesar' ? 'kesar_qty' : 'alphonso_qty', { min: 0, max: 200 })}
-                            {...register(`${product.id}_qty` as any, { min: 0, max: 200 })}
-
-                          />
-                          <span className="text-xs text-gray-400 font-body">boxes</span>
-                        </div>
-                      </div>
-                    ))} */}
+                    
                     {PRODUCTS.map(product => {
+                      const settingKey = `${product.id}_open`
+                      const varietyOff = siteSettings[settingKey] === false
                       const lockedOut = courierMode && product.id !== 'kesar'
                       const courierPrice = courierMode && product.id === 'kesar'
                       return (
-                        <div key={product.id} className="p-4 rounded-xl border transition-opacity" style={{ borderColor: 'rgba(212,128,26,0.25)', backgroundColor: lockedOut ? '#f5f5f5' : '#fffbeb', opacity: lockedOut ? 0.4 : 1 }}>
+                        <div key={product.id} className="p-4 transition-opacity border rounded-xl" style={{ borderColor: 'rgba(212,128,26,0.25)', backgroundColor: lockedOut ? '#f5f5f5' : '#fffbeb', opacity: lockedOut ? 0.4 : 1 }}>
                           <div className="flex items-center justify-between mb-2">
                             <div>
-                              <div className="font-display font-semibold text-sm" style={{ color: '#1b4332' }}>{product.name}</div>
-                              <div className="font-body text-xs text-gray-400">
+                              <div className="text-sm font-semibold font-display" style={{ color: '#1b4332' }}>{product.name}</div>
+                              <div className="text-xs text-gray-400 font-body">
                                 ${courierPrice ? 55 : product.price} CAD / box{product.pieces ? ` · ${product.pieces}` : ''}
-                                {courierPrice && <span className="ml-1 text-amber-600 font-bold">(courier)</span>}
+                                {courierPrice && <span className="ml-1 font-bold text-amber-600">(courier)</span>}
+                                {varietyOff && !courierMode && <span className="ml-1 font-bold" style={{ color: '#dc2626' }}>— Sold out</span>}
+
                               </div>
                             </div>
                             <span className="text-2xl">{product.emoji}</span>
                           </div>
                           <div className="flex items-center gap-3 mt-3">
-                            <label className="font-body text-xs text-gray-500">Qty:</label>
+                            <label className="text-xs text-gray-500 font-body">Qty:</label>
                             {/* <input
                               type="number"
                               min="0"
                               max="200"
                               defaultValue={0}
                               disabled={lockedOut}
-                              className="w-20 px-3 py-2 rounded-lg border text-center font-body font-bold text-sm focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                              className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
                               style={{ borderColor: lockedOut ? '#d1d5db' : '#d4801a' }}
                               {...register(`${product.id}_qty` as any, { min: 0, max: 200 })}
                             /> */}
@@ -526,14 +528,14 @@ export default function Home() {
                               max={courierMode ? 50 : 200}
                               defaultValue={0}
                               disabled={lockedOut}
-                              className="w-20 px-3 py-2 rounded-lg border text-center font-body font-bold text-sm focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                              className="w-20 px-3 py-2 text-sm font-bold text-center border rounded-lg font-body focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
                               style={{ borderColor: lockedOut ? '#d1d5db' : '#d4801a' }}
                               {...register(`${product.id}_qty` as any, {
                                 min: 0,
                                 max: courierMode ? 50 : 200,
                               })}
                             />
-                            <span className="font-body text-xs text-gray-400">boxes</span>
+                            <span className="text-xs text-gray-400 font-body">boxes</span>
                             {/* <div className="mt-2 text-[11px] font-body text-gray-400">
                               {courierMode
                                 ? 'Maximum 50 boxes for courier orders'
@@ -557,7 +559,7 @@ export default function Home() {
                     </div>
                   )} */}
                     {total > 0 && (
-                    <div className="mt-4 p-4 rounded-xl" style={{ backgroundColor: '#1b4332' }}>
+                    <div className="p-4 mt-4 rounded-xl" style={{ backgroundColor: '#1b4332' }}>
                       <div className="font-body text-white/70 text-sm mb-2 space-y-0.5">
                         {courierMode ? (
                           Number(kesarQty) > 0 && <div>{kesarQty} × Kesar (Courier) = ${55 * Number(kesarQty)} CAD</div>
@@ -571,7 +573,7 @@ export default function Home() {
                           </>
                         )}
                       </div>
-                      <div className="font-display font-bold text-white text-xl border-t border-white/20 pt-2 mt-2">
+                      <div className="pt-2 mt-2 text-xl font-bold text-white border-t font-display border-white/20">
                         Total: ${total} <span className="text-sm font-normal text-white/60">CAD</span>
                       </div>
                     </div>
@@ -693,22 +695,22 @@ export default function Home() {
                         <input
                           type="text"
                           placeholder="e.g. Hamilton, Ottawa, Calgary…"
-                          className="w-full px-4 py-3 rounded-lg border font-body text-sm focus:outline-none focus:ring-2"
+                          className="w-full px-4 py-3 text-sm border rounded-lg font-body focus:outline-none focus:ring-2"
                           style={{ borderColor: 'rgba(212,128,26,0.4)' }}
                           {...register('other_city', { required: courierMode ? 'Please enter your city' : false })}
                         />
-                        {(errors as any).other_city && <p className="text-red-500 text-xs mt-1">{(errors as any).other_city.message}</p>}
+                        {(errors as any).other_city && <p className="mt-1 text-xs text-red-500">{(errors as any).other_city.message}</p>}
                       </div>
                     )}
 
                     {/* Courier notice banner */}
                     {courierMode && (
-                      <div className="p-4 rounded-xl border-2" style={{ backgroundColor: '#fffbeb', borderColor: '#d4801a' }}>
+                      <div className="p-4 border-2 rounded-xl" style={{ backgroundColor: '#fffbeb', borderColor: '#d4801a' }}>
                         <div className="flex items-start gap-3">
                           <span className="text-2xl">📦</span>
                           <div>
-                            <div className="font-display font-bold text-sm mb-1" style={{ color: '#1b4332' }}>Courier Order</div>
-                            <div className="font-body text-xs leading-relaxed" style={{ color: '#78350f' }}>
+                            <div className="mb-1 text-sm font-bold font-display" style={{ color: '#1b4332' }}>Courier Order</div>
+                            <div className="text-xs leading-relaxed font-body" style={{ color: '#78350f' }}>
                               Courier orders are <strong>Kesar only</strong> at <strong>$55 CAD / box</strong> (includes shipping).
                               Bhavin will confirm delivery timeline via WhatsApp after you place the order.
                             </div>
@@ -739,6 +741,18 @@ export default function Home() {
                       : <>💳 <strong>Payment on delivery</strong> — Bhavin will WhatsApp you to confirm your order and delivery window.</>
                     }
                   </div>
+                  {settingsLoading ? (
+                    <div className="w-full py-4 text-sm text-center text-gray-400 rounded-xl font-body" style={{ background: '#f3f4f6' }}>
+                      Checking availability…
+                    </div>
+                  ) : !siteSettings.orders_open ? (
+                    <div className="w-full py-4 text-lg font-bold text-center rounded-xl" style={{ background: '#fee2e2', color: '#991b1b', border: '2px solid #fca5a5' }}>
+                      🚫 Orders are currently closed
+                      <div className="mt-1 text-sm font-normal" style={{ color: '#b91c1c' }}>
+                        Please check back soon or DM us on Instagram
+                      </div>
+                    </div>
+                  ) : (
                   <button
                     type="submit"
                     disabled={isSubmitting}
@@ -747,6 +761,7 @@ export default function Home() {
                   >
                     {isSubmitting ? '⏳ Placing Order…' : '🥭 Place Order →'}
                   </button>
+                  )}
                 </div>
               </div>
             </form>
