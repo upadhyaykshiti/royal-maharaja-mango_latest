@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { getNextDeliveryDates } from '@/lib/dates'
 
 type Order = {
   id: string
@@ -85,6 +86,7 @@ export default function AdminDashboard() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
+  const deliveryDates = getNextDeliveryDates()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -133,12 +135,18 @@ export default function AdminDashboard() {
   }
 
   const filtered = orders.filter(o => {
-    const matchStatus = filter === 'all' || o.status === filter
+    // const matchStatus = filter === 'all' || o.status === filter
+  const matchStatus =
+   filter === 'all'
+    ? o.status !== 'cancelled'
+    : o.status === filter
     const matchSearch = !search ||
       o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
       o.customer_phone.includes(search) ||
       o.city.toLowerCase().includes(search.toLowerCase())
-    const matchDate = !dateFilter || o.delivery_date.includes(dateFilter)
+    // const matchDate = !dateFilter || o.delivery_date.includes(dateFilter)
+    const matchDate =
+  !dateFilter || o.delivery_date === dateFilter
     return matchStatus && matchSearch && matchDate
   })
 
@@ -156,12 +164,20 @@ export default function AdminDashboard() {
   const courierRevenue = courierOrders.reduce((s, o) => s + Number(o.total_amount), 0)
 
   const statGroups = [
-    { label: 'Total Orders',      val: orders.length },
-    { label: '🏠 Home Delivery',  val: orders.filter(o => o.order_type !== 'courier').length },
-    { label: '📦 Courier Orders', val: orders.filter(o => o.order_type === 'courier').length },
-    { label: 'Pending',           val: orders.filter(o => o.status === 'pending').length },
-    { label: 'Confirmed',         val: orders.filter(o => o.status === 'confirmed').length },
-    { label: 'Completed',         val: orders.filter(o => o.status === 'completed').length },
+    // { label: 'Total Orders',      val: orders.length },
+    // { label: '🏠 Home Delivery',  val: orders.filter(o => o.order_type !== 'courier').length },
+    // { label: '📦 Courier Orders', val: orders.filter(o => o.order_type === 'courier').length },
+    // { label: 'Pending',           val: orders.filter(o => o.status === 'pending').length },
+    // { label: 'Confirmed',         val: orders.filter(o => o.status === 'confirmed').length },
+    // { label: 'Completed',         val: orders.filter(o => o.status === 'completed').length },
+  
+  { label: 'Total Orders',      val: notCancelled.length },
+  { label: '🏠 Home Delivery',  val: notCancelled.filter(o => o.order_type !== 'courier').length },
+  { label: '📦 Courier Orders', val: notCancelled.filter(o => o.order_type === 'courier').length },
+  { label: 'Pending',           val: notCancelled.filter(o => o.status === 'pending').length },
+  { label: 'Confirmed',         val: notCancelled.filter(o => o.status === 'confirmed').length },
+  { label: 'Completed',         val: notCancelled.filter(o => o.status === 'completed').length },
+
   ]
 
   const s: Record<string, React.CSSProperties> = {
@@ -393,18 +409,43 @@ export default function AdminDashboard() {
             onChange={e => setSearch(e.target.value)}
             style={{ ...s.input, flex: 1, minWidth: 160 }}
           />
-          <input
+          {/* <input
             type="text"
             placeholder="Filter by date (e.g. May)"
             value={dateFilter}
             onChange={e => setDateFilter(e.target.value)}
             style={{ ...s.input, width: 160 }}
-          />
+          /> */}
+          <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              style={{
+                ...s.input,
+                width: 320,
+                background: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">All Delivery Dates</option>
+
+              {deliveryDates.map((date) => (
+                 <option key={date} value={date}>
+                  {/* {date} ({orders.filter(o => o.delivery_date === date).length}) */}
+                  {date} ({notCancelled.filter(o => o.delivery_date === date).length})
+
+              </option>
+                
+              ))}
+            </select>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button style={filterBtn(filter === 'all')} onClick={() => setFilter('all')}>All ({orders.length})</button>
+            {/* <button style={filterBtn(filter === 'all')} onClick={() => setFilter('all')}>All ({orders.length})</button> */}
+            <button style={filterBtn(filter === 'all')} onClick={() => setFilter('all')}>All ({notCancelled.length})</button>  
+
             {STATUSES.map(st => (
               <button key={st} style={filterBtn(filter === st)} onClick={() => setFilter(st)}>
                 {STATUS_CONFIG[st].label} ({orders.filter(o => o.status === st).length})
+                {/* {STATUS_CONFIG[st].label} ({notCancelled.filter(o => o.status === st).length} */}
+                )
               </button>
             ))}
           </div>
@@ -418,7 +459,9 @@ export default function AdminDashboard() {
         ) : (
           paginatedOrders.map(order => {
             const expanded = expandedId === order.id
+            // const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
             const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+
             const isCourier = order.order_type === 'courier'
 
             const itemSummary = PRODUCT_META
